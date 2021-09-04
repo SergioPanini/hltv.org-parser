@@ -9,7 +9,7 @@ def _push_request(URL:  str, data=None, repeat_delay: int=1, max_delay: int=10) 
     '''Отправляет запрос на URL'''
 
     headers = {
-        'User-Agent':'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36',
+        'User-Agent':f'Mozilla/{random.randint(0, 30)}.{random.randint(0, 30)} (X{random.randint(0, 30)}; Linux x{random.randint(0, 30)}) AppleWebKit/{random.randint(0, 30)}.{random.randint(0, 30)} (KHTML, like Gecko) Chrome/{random.randint(0, 30)}.{random.randint(0, 30)}.{random.randint(0, 30)}.{random.randint(0, 30)} Safari/{random.randint(0, 30)}.{random.randint(0, 30)}',
         'content-type': 'text/html;charset=utf-8'
     }
 
