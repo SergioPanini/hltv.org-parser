@@ -3,15 +3,19 @@ import bs4
 import pandas as pd
 from time import sleep, time
 import random
-
+import datetime
+from fake_useragent import UserAgent
 
 def _push_request(URL:  str, data=None, repeat_delay: int=1, max_delay: int=10) -> str:
     '''Отправляет запрос на URL'''
 
+    ua = UserAgent()
+
     headers = {
-        'User-Agent':f'Mozilla/{random.randint(0, 30)}.{random.randint(0, 30)} (X{random.randint(0, 30)}; Linux x{random.randint(0, 30)}) AppleWebKit/{random.randint(0, 30)}.{random.randint(0, 30)} (KHTML, like Gecko) Chrome/{random.randint(0, 30)}.{random.randint(0, 30)}.{random.randint(0, 30)}.{random.randint(0, 30)} Safari/{random.randint(0, 30)}.{random.randint(0, 30)}',
+        'User-Agent': ua.random,
         'content-type': 'text/html;charset=utf-8'
     }
+    print('header: ', headers)
 
     #Задержка против блокировки
     sleep(random.randint(1, 30)/10)
@@ -119,10 +123,80 @@ def parse(repeat_delay=1, max_delay = 10, csv_file=None):
                     
                     return
 
-                        
+
+def parse2(date_time_stop: str, page_number: int = 0, repeat_delay=1, max_delay = 10, csv_file=None):
+    '''Функция парсит ссылки матчей до определенного времени'''           
     
+    #Создаем или открываем файл для записи данных
+    if csv_file:
+        df = pd.read_csv(csv_file, sep=',')
+    
+    else:
+        df = pd.DataFrame(columns=['match_url'])
+    
+    print('[INFO] _______Start Work_______')
+    print('[INFO] Date time stop: ', date_time_stop)
+
+    URL = f'https://www.hltv.org/results?offset={page_number}&startDate={date_time_stop}&endDate={datetime.datetime.now().strftime("%Y-%m-%d")}'
+
+    #Получаем кол-во матчей    
+    page_count = int(_get_pagination(URL, repeat_delay=1, max_delay = 10))
+    
+    print('[INFO] Pagination: ', page_count)
+    
+    #Перебираем все страницы
+    while page_number < page_count: 
+        
+        URL = f'https://www.hltv.org/results?offset={page_number}&startDate={date_time_stop}&endDate={datetime.datetime.now().strftime("%Y-%m-%d")}'
+
+        print('[INFO] Push url: ', URL)
+        print('[INFO] Page number: ', page_number)
+        
+        #Получаем страницу
+        try:
+            response_text = _push_request(URL, repeat_delay=repeat_delay, max_delay=max_delay)
+
+        except KeyboardInterrupt:
+            
+            df.to_csv('matches_links.csv', sep=',', index=False)
+            break
+
+        except:
+            print('[WARNING] Problems with url: ', URL)
+            continue
+        
+
+        soup = bs4.BeautifulSoup(response_text, 'html.parser')
+
+        #Находим блок в сезультатами
+        results_all = soup.find_all(class_='results-all')[-1]
+
+        #Находим даты, в которых были матчи
+        results_sublist = results_all.find_all(class_='results-sublist')
+    
+        #Находим матчи и саму дату
+        for sublist in results_sublist:
+            matches = sublist.find_all(class_='result-con')
+
+            #Находим названия матчей
+            for i, match in enumerate(matches):
+                match_url = 'https://www.hltv.org' + match.a['href']
+
+                print(f'[INFO] Find match url: ', match_url)
+
+                #ПРоверяем что такой ссылки у нас нет и добавляем ее в датафрейм
+                if not (True in list(df['match_url'] == match_url)):
+                        
+                    df = df.append({'match_url': match_url}, ignore_index=True)
+                    print(f'[INFO] Added match url: ', match_url)
+
+        #Сохраняем датафрейм и увеличиваем страницу
+        df.to_csv('matches_links.csv', sep=',', index=False)
+        page_number += 100
+    
+    print('[INFO] _______END Work_______')  
 
 
 if __name__ == '__main__':
-    parse(csv_file='matches_links.csv')
+    parse2(date_time_stop='2021-08-15', csv_file='matches_links.csv')
     
