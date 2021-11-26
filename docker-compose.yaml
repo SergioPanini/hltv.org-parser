@@ -1,0 +1,25 @@
+version: "2.0"
+
+services:
+  DB:
+    image: postgres
+    restart: always
+    volumes:
+      - db_volume:/var/lib/postgresql/data
+    ports:
+      - 5434:5432
+    environment:
+      - POSTGRES_USER=parser
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=hltv
+
+  brokermq:
+    image: "rabbitmq:3-management"
+    restart: always
+    ports:
+      - 15674:15672
+      - 5674:5672
+    
+
+volumes:
+  db_volume:
